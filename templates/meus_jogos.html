@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Jogos - Anotações de Jogos do Dia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1>Anotações de Jogos do Dia</h1>
+        <nav>
+            <a href="/" class="nav-link">Todos os Jogos</a>
+            <a href="/meus-jogos" class="nav-link active">Meus Jogos</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="jogos-container">
+            <div id="lista-jogos">
+                <!-- Os jogos com anotações serão inseridos aqui via JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <template id="template-jogo">
+        <div class="jogo-card tem-anotacao" data-jogo-id="">
+            <div class="jogo-header">
+                <div class="jogo-info">
+                    <span class="campeonato"></span>
+                    <div class="times">
+                        <span class="time-casa"></span>
+                        <span class="vs">x</span>
+                        <span class="time-visitante"></span>
+                    </div>
+                    <span class="horario"></span>
+                </div>
+                <div class="jogo-acoes">
+                    <button class="btn-anotacao" title="Fazer anotação">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-expandir" title="Expandir">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="jogo-anotacao" style="display: none;">
+                <textarea class="anotacao-texto" placeholder="Digite suas anotações sobre o jogo..."></textarea>
+                <button class="btn-salvar">Salvar</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="{{ url_for('static', filename='js/meus_jogos.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anotações de Jogos do Dia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header-fixo">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>Anotações de Jogos do Dia</h1>
+                <nav>
+                    <a href="/" class="nav-link active">Todos os Jogos</a>
+                    <a href="/meus-jogos" class="nav-link">Meus Jogos</a>
+                </nav>
+            </div>
+            <div class="filtro-container">
+                <div class="info-container">
+                    <h2>Jogos do dia (<span id="quantidade-jogos">0</span>)</h2>
+                    <span id="data-atual" class="data-atual"></span>
+                </div>
+                <div class="filtros">
+                    <div class="paises-principais" id="paises-principais">
+                        <!-- Países principais serão inseridos aqui via JavaScript -->
+                    </div>
+                    <div class="filtro-paises">
+                        <button id="toggle-filtro" class="toggle-filtro">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <div id="lista-paises" class="lista-paises recolhido">
+                            <!-- Outros países serão inseridos aqui via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <div class="jogos-container">
+            <div id="lista-jogos">
+                <!-- Os jogos serão inseridos aqui via JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <template id="template-jogo">
+        <div class="jogo-card" data-jogo-id="">
+            <div class="jogo-header">
+                <div class="jogo-info">
+                    <div class="campeonato">
+                        <img class="campeonato-logo" src="" alt="">
+                        <div class="campeonato-info">
+                            <img class="pais-bandeira" src="" alt="">
+                            <span class="campeonato-nome"></span>
+                        </div>
+                    </div>
+                    <div class="times">
+                        <div class="time">
+                            <img class="time-escudo" src="" alt="">
+                            <span class="time-nome"></span>
+                        </div>
+                        <span class="vs">x</span>
+                        <div class="time">
+                            <img class="time-escudo" src="" alt="">
+                            <span class="time-nome"></span>
+                        </div>
+                    </div>
+                    <span class="horario"></span>
+                </div>
+                <div class="jogo-acoes">
+                    <button class="btn-anotacao" title="Fazer anotação">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-expandir" title="Expandir">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="jogo-anotacao" style="display: none;">
+                <textarea class="anotacao-texto" placeholder="Digite suas anotações sobre o jogo..."></textarea>
+                <button class="btn-salvar">Salvar</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
