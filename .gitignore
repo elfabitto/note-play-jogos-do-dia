@@ -39,3 +39,6 @@ instance/*.db
 
 # Environment variables
 .env
+
+# Firebase credentials
+firebase-credentials.json
