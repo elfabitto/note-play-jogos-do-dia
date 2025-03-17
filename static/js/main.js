@@ -23,6 +23,37 @@ function getCodigoPais(pais, alpha3) {
     return alpha3 || pais.substring(0, 3).toUpperCase();
 }
 
+// Função para obter o código de país correto para a bandeira
+function getCodigoBandeira(pais, slug) {
+    // Mapeamento de países para códigos ISO 3166-1 alpha-2
+    const mapeamentoPaises = {
+        'World': 'un', // Bandeira da ONU para "World"
+        'England': 'gb-eng',
+        'Congo-DR': 'cd',
+        'Armenia': 'am',
+        'Cyprus': 'cy',
+        'Guinea': 'gn',
+        'Mali': 'ml',
+        'Israel': 'il',
+        'Bosnia': 'ba',
+        'United-Arab-Emirates': 'ae',
+        'Costa-Rica': 'cr',
+        'Mauritania': 'mr',
+        'Antigua-And-Barbuda': 'ag',
+        'Guatemala': 'gt',
+        // Adicione mais mapeamentos conforme necessário
+    };
+    
+    // Retorna o código mapeado ou o slug original
+    return mapeamentoPaises[pais] || slug;
+}
+
+// Função para lidar com erro de carregamento da bandeira
+function handleBandeiraError(img) {
+    img.onerror = null; // Evita loop infinito
+    img.src = 'https://flagcdn.com/un.svg'; // Bandeira da ONU como fallback genérico
+}
+
 // Lista de países principais na ordem desejada
 const PAISES_PRINCIPAIS = [
     { nome: 'Brazil', slug: 'br', alpha3: 'BRA' },
@@ -91,10 +122,11 @@ function criarBotaoPais(nome, slug, alpha3, className) {
     // Adicionar bandeira do país
     const bandeiraPais = document.createElement('img');
     bandeiraPais.className = 'index__bandeira-pais';
-    bandeiraPais.src = `https://flagcdn.com/${slug}.svg`;
+    bandeiraPais.src = `https://flagcdn.com/${getCodigoBandeira(nome, slug)}.svg`;
     bandeiraPais.alt = `Bandeira ${nome}`;
     bandeiraPais.width = 20;
     bandeiraPais.height = 15;
+    bandeiraPais.onerror = function() { handleBandeiraError(this); };
     paisFiltro.appendChild(bandeiraPais);
 
     // Adicionar espaço entre a bandeira e o código
@@ -224,10 +256,11 @@ function criarElementoJogo(jogo) {
     // Criar elemento de imagem para a bandeira
     const bandeiraPais = document.createElement('img');
     bandeiraPais.className = 'jogo__bandeira-pais';
-    bandeiraPais.src = `https://flagcdn.com/${jogo.pais_slug || 'xx'}.svg`;
+    bandeiraPais.src = `https://flagcdn.com/${getCodigoBandeira(jogo.pais, jogo.pais_slug) || 'un'}.svg`;
     bandeiraPais.alt = `Bandeira ${jogo.pais || ''}`;
     bandeiraPais.width = 20;
     bandeiraPais.height = 15;
+    bandeiraPais.onerror = function() { handleBandeiraError(this); };
     
     // Limpar o conteúdo anterior
     paisNome.innerHTML = '';

@@ -3,6 +3,37 @@ document.addEventListener('DOMContentLoaded', () => {
     atualizarDataAtual();
 });
 
+// Função para obter o código de país correto para a bandeira
+function getCodigoBandeira(pais, slug) {
+    // Mapeamento de países para códigos ISO 3166-1 alpha-2
+    const mapeamentoPaises = {
+        'World': 'un', // Bandeira da ONU para "World"
+        'England': 'gb-eng',
+        'Congo-DR': 'cd',
+        'Armenia': 'am',
+        'Cyprus': 'cy',
+        'Guinea': 'gn',
+        'Mali': 'ml',
+        'Israel': 'il',
+        'Bosnia': 'ba',
+        'United-Arab-Emirates': 'ae',
+        'Costa-Rica': 'cr',
+        'Mauritania': 'mr',
+        'Antigua-And-Barbuda': 'ag',
+        'Guatemala': 'gt',
+        // Adicione mais mapeamentos conforme necessário
+    };
+    
+    // Retorna o código mapeado ou o slug original
+    return mapeamentoPaises[pais] || slug;
+}
+
+// Função para lidar com erro de carregamento da bandeira
+function handleBandeiraError(img) {
+    img.onerror = null; // Evita loop infinito
+    img.src = 'https://flagcdn.com/un.svg'; // Bandeira da ONU como fallback genérico
+}
+
 function atualizarDataAtual() {
     const dataAtual = new Date();
     const dataFormatada = dataAtual.toLocaleDateString('pt-BR', {
@@ -71,10 +102,11 @@ function criarElementoJogo(jogo, anotacao) {
     // Criar elemento de imagem para a bandeira
     const bandeiraPais = document.createElement('img');
     bandeiraPais.className = 'jogo__bandeira-pais';
-    bandeiraPais.src = `https://flagcdn.com/${jogo.pais_slug || 'xx'}.svg`;
+    bandeiraPais.src = `https://flagcdn.com/${getCodigoBandeira(jogo.pais, jogo.pais_slug) || 'un'}.svg`;
     bandeiraPais.alt = `Bandeira ${jogo.pais || ''}`;
     bandeiraPais.width = 20;
     bandeiraPais.height = 15;
+    bandeiraPais.onerror = function() { handleBandeiraError(this); };
     
     // Limpar o conteúdo anterior
     paisNome.innerHTML = '';
@@ -97,14 +129,17 @@ function criarElementoJogo(jogo, anotacao) {
     
     // Preencher anotação existente
     const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    
     if (anotacao) {
         textarea.value = anotacao.texto;
+        anotacaoVisualizacao.textContent = anotacao.texto;
     }
     
     // Configurar botões e eventos
     const btnExpandir = jogoCard.querySelector('.btn-expandir');
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
-    const btnSalvar = jogoCard.querySelector('.btn-salvar');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
     
     // Fazer o card inteiro ser clicável
     jogoCard.querySelector('.jogo-header').addEventListener('click', () => {
@@ -117,7 +152,16 @@ function criarElementoJogo(jogo, anotacao) {
         toggleAnotacao(jogoCard);
     });
     
-    btnSalvar.addEventListener('click', () => salvarAnotacao(jogoCard));
+    // Configurar o botão de editar/salvar
+    btnEditar.addEventListener('click', () => {
+        const estaModoEdicao = btnEditar.textContent === 'Salvar';
+        
+        if (estaModoEdicao) {
+            salvarAnotacao(jogoCard);
+        } else {
+            ativarModoEdicao(jogoCard);
+        }
+    });
     
     return jogoElement;
 }
@@ -136,6 +180,14 @@ function toggleAnotacao(jogoCard) {
 function mostrarAnotacao(jogoCard) {
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
     const btnExpandir = jogoCard.querySelector('.btn-expandir i');
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    
+    // Garantir que esteja no modo de visualização
+    textarea.style.display = 'none';
+    anotacaoVisualizacao.style.display = 'block';
+    btnEditar.textContent = 'Editar';
     
     anotacaoDiv.style.display = 'block';
     anotacaoDiv.classList.remove('recolhido');
@@ -158,9 +210,40 @@ function esconderAnotacao(jogoCard) {
     }, 300);
 }
 
+function ativarModoEdicao(jogoCard) {
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    
+    // Mostrar textarea e esconder visualização
+    textarea.style.display = 'block';
+    anotacaoVisualizacao.style.display = 'none';
+    
+    // Mudar o texto do botão para "Salvar"
+    btnEditar.textContent = 'Salvar';
+    
+    // Focar no textarea
+    textarea.focus();
+}
+
+function desativarModoEdicao(jogoCard) {
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    
+    // Esconder textarea e mostrar visualização
+    textarea.style.display = 'none';
+    anotacaoVisualizacao.style.display = 'block';
+    
+    // Mudar o texto do botão para "Editar"
+    btnEditar.textContent = 'Editar';
+}
+
 async function salvarAnotacao(jogoCard) {
     const jogoId = jogoCard.dataset.jogoId;
-    const texto = jogoCard.querySelector('.anotacao-texto').value;
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const texto = textarea.value;
     
     if (!texto.trim()) {
         alert('Por favor, digite uma anotação antes de salvar.');
@@ -184,8 +267,13 @@ async function salvarAnotacao(jogoCard) {
         });
         
         if (response.ok) {
+            // Atualizar o texto de visualização
+            anotacaoVisualizacao.textContent = texto;
+            
+            // Voltar para o modo de visualização
+            desativarModoEdicao(jogoCard);
+            
             alert('Anotação salva com sucesso!');
-            esconderAnotacao(jogoCard);
         } else {
             throw new Error('Erro ao salvar anotação');
         }
