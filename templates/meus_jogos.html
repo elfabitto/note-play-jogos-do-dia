@@ -5,15 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Jogos - Anotações de Jogos do Dia</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/meus_jogos.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <h1>Anotações de Jogos do Dia</h1>
-        <nav>
-            <a href="/" class="nav-link">Todos os Jogos</a>
-            <a href="/meus-jogos" class="nav-link active">Meus Jogos</a>
-        </nav>
+    <header class="header-fixo">
+        <div class="meus_jogos__header-content">
+            <div class="header-title">
+                <h1>Anotações de Jogos do Dia</h1>
+                <nav>
+                    <a href="/" class="nav-link">Todos os Jogos</a>
+                    <a href="/meus-jogos" class="nav-link active">Meus Jogos</a>
+                </nav>
+            </div>
+            <div class="meus_jogos__info-container">
+                <h2>Meus Jogos</h2>
+                <span id="data-atual" class="data-atual"></span>
+            </div>
+        </div>
     </header>
     
     <main>
@@ -25,21 +34,27 @@
     </main>
 
     <template id="template-jogo">
-        <div class="jogo-card tem-anotacao" data-jogo-id="">
+        <div class="meus_jogos__jogo-card tem-anotacao" data-jogo-id="">
             <div class="jogo-header">
                 <div class="jogo-info">
-                    <span class="campeonato"></span>
-                    <div class="times">
-                        <span class="time-casa"></span>
-                        <span class="vs">x</span>
-                        <span class="time-visitante"></span>
+                <div class="campeonato">
+                    <div class="campeonato-info">
+                        <span class="pais-nome"></span>
+                        <span class="campeonato-nome"></span>
                     </div>
+                </div>
+                <div class="times">
+                    <div class="time">
+                        <span class="time-nome"></span>
+                    </div>
+                    <span class="vs">x</span>
+                    <div class="time">
+                        <span class="time-nome"></span>
+                    </div>
+                </div>
                     <span class="horario"></span>
                 </div>
                 <div class="jogo-acoes">
-                    <button class="btn-anotacao" title="Fazer anotação">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="btn-expandir" title="Expandir">
                         <i class="fas fa-chevron-down"></i>
                     </button>

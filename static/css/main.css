@@ -271,33 +271,29 @@ main {
 
 .jogo-info {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .campeonato {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     margin-bottom: 0.5rem;
-}
-
-.campeonato-logo {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
+    width: 100%;
+    text-align: center;
 }
 
 .campeonato-info {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
 }
 
-.pais-bandeira {
-    width: 16px;
-    height: 12px;
-    object-fit: cover;
-    border-radius: 2px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+.pais-nome {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: bold;
 }
 
 .campeonato-nome {
@@ -311,18 +307,13 @@ main {
     justify-content: center;
     gap: 1rem;
     margin-bottom: 0.5rem;
+    width: 100%;
 }
 
 .time {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-}
-
-.time-escudo {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+    justify-content: center;
 }
 
 .time-nome {
@@ -338,6 +329,10 @@ main {
 .horario {
     font-size: 0.9rem;
     color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
 }
 
 .jogo-acoes {

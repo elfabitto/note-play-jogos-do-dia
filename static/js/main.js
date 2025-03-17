@@ -85,18 +85,12 @@ function criarFiltrosPaises(jogos) {
 
 function criarBotaoPais(nome, slug, alpha3, className) {
     const paisFiltro = document.createElement('div');
-    paisFiltro.className = className;
+    paisFiltro.className = className === 'pais-principal' ? 'index__pais-principal' : 'index__pais-filtro';
     paisFiltro.dataset.pais = nome;
-
-    const bandeira = document.createElement('img');
-    const paisSlug = nome === 'England' ? 'gb-eng' : slug.substring(0, 2).toLowerCase();
-    bandeira.src = `https://flagcdn.com/w20/${paisSlug}.png`;
-    bandeira.alt = nome;
 
     const codigoPais = document.createElement('span');
     codigoPais.textContent = getCodigoPais(nome, alpha3);
 
-    paisFiltro.appendChild(bandeira);
     paisFiltro.appendChild(codigoPais);
 
     paisFiltro.addEventListener('click', () => {
@@ -118,8 +112,8 @@ function filtrarJogos() {
     const jogosCards = document.querySelectorAll('.jogo-card');
     
     jogosCards.forEach(card => {
-        const paisBandeira = card.querySelector('.pais-bandeira');
-        const pais = paisBandeira.alt;
+        const paisNome = card.querySelector('.pais-nome');
+        const pais = paisNome.textContent;
         
         if (paisesSelecionados.size === 0 || paisesSelecionados.has(pais)) {
             card.style.display = '';
@@ -213,48 +207,35 @@ function criarElementoJogo(jogo) {
     jogoCard.dataset.jogoId = jogo.id;
     
     // Preencher informações do jogo
-    const campeonatoLogo = jogoCard.querySelector('.campeonato-logo');
-    campeonatoLogo.src = `https://api.sofascore.app/api/v1/unique-tournament/${jogo.tournament_id}/image`;
-    campeonatoLogo.alt = jogo.campeonato;
-    
-    const paisBandeira = jogoCard.querySelector('.pais-bandeira');
-    // Tratamento especial para a Inglaterra
-    const paisSlug = jogo.pais === 'England' ? 'gb-eng' : jogo.pais_slug.substring(0, 2).toLowerCase();
-    paisBandeira.src = `https://flagcdn.com/w20/${paisSlug}.png`;
-    paisBandeira.alt = jogo.pais;
+    const paisNome = jogoCard.querySelector('.pais-nome');
+    paisNome.textContent = `🏴 ${jogo.pais || ''}`;
     
     jogoCard.querySelector('.campeonato-nome').textContent = jogo.campeonato;
 
     // Time da casa
-    const timeCasaEscudo = jogoCard.querySelector('.time:first-child .time-escudo');
-    timeCasaEscudo.src = `https://api.sofascore.app/api/v1/team/${jogo.time_casa_id}/image`;
-    timeCasaEscudo.alt = jogo.time_casa;
     jogoCard.querySelector('.time:first-child .time-nome').textContent = jogo.time_casa;
 
     // Time visitante
-    const timeVisitanteEscudo = jogoCard.querySelector('.time:last-child .time-escudo');
-    timeVisitanteEscudo.src = `https://api.sofascore.app/api/v1/team/${jogo.time_visitante_id}/image`;
-    timeVisitanteEscudo.alt = jogo.time_visitante;
     jogoCard.querySelector('.time:last-child .time-nome').textContent = jogo.time_visitante;
 
-    jogoCard.querySelector('.horario').textContent = formatarData(jogo.data_hora);
+    // Adicionar emoji de relógio ao horário
+    const horarioElement = jogoCard.querySelector('.horario');
+    horarioElement.innerHTML = `<span>🕒</span><span>${formatarData(jogo.data_hora)}</span>`;
     
     // Configurar botões e eventos
     const btnExpandir = jogoCard.querySelector('.btn-expandir');
-    const btnAnotacao = jogoCard.querySelector('.btn-anotacao');
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
     const btnSalvar = jogoCard.querySelector('.btn-salvar');
     
-    btnExpandir.addEventListener('click', (e) => {
-        e.stopPropagation();
+    // Fazer o card inteiro ser clicável
+    jogoCard.querySelector('.jogo-header').addEventListener('click', () => {
         toggleAnotacao(jogoCard);
     });
     
-    btnAnotacao.addEventListener('click', (e) => {
+    // Manter o botão de expandir também clicável
+    btnExpandir.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (anotacaoDiv.style.display === 'none') {
-            mostrarAnotacao(jogoCard);
-        }
+        toggleAnotacao(jogoCard);
     });
     
     btnSalvar.addEventListener('click', () => salvarAnotacao(jogoCard));
@@ -316,10 +297,10 @@ async function salvarAnotacao(jogoCard) {
             },
             body: JSON.stringify({
                 jogo_id: jogoId,
-                time_casa: jogoCard.querySelector('.time-casa').textContent,
-                time_visitante: jogoCard.querySelector('.time-visitante').textContent,
+                time_casa: jogoCard.querySelector('.time:first-child .time-nome').textContent,
+                time_visitante: jogoCard.querySelector('.time:last-child .time-nome').textContent,
                 data_hora: new Date().toISOString(),
-                campeonato: jogoCard.querySelector('.campeonato').textContent,
+                campeonato: jogoCard.querySelector('.campeonato-nome').textContent,
                 texto: texto
             })
         });
@@ -348,10 +329,4 @@ function formatarData(timestamp) {
         minute: '2-digit',
         hour12: false
     });
-}
-
-// Função para obter apenas a hora do timestamp para ordenação
-function getHoraLocal(timestamp) {
-    const data = new Date(timestamp * 1000);
-    return data.getHours() * 60 + data.getMinutes();
 }

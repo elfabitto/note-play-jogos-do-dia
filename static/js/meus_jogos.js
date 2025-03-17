@@ -1,6 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     carregarMeusJogos();
+    atualizarDataAtual();
 });
+
+function atualizarDataAtual() {
+    const dataAtual = new Date();
+    const dataFormatada = dataAtual.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    document.getElementById('data-atual').textContent = dataFormatada;
+}
 
 async function carregarMeusJogos() {
     try {
@@ -29,9 +41,9 @@ async function carregarMeusJogos() {
         
         if (jogosComAnotacoes.length === 0) {
             listaJogos.innerHTML = `
-                <div class="mensagem-vazia">
+                <div class="meus_jogos__mensagem-vazia">
                     <p>Você ainda não fez anotações em nenhum jogo hoje.</p>
-                    <a href="/" class="btn-voltar">Ver todos os jogos</a>
+                    <a href="/" class="meus_jogos__btn-voltar">Ver todos os jogos</a>
                 </div>
             `;
             return;
@@ -49,15 +61,25 @@ async function carregarMeusJogos() {
 function criarElementoJogo(jogo, anotacao) {
     const template = document.getElementById('template-jogo');
     const jogoElement = template.content.cloneNode(true);
-    const jogoCard = jogoElement.querySelector('.jogo-card');
+    const jogoCard = jogoElement.querySelector('.meus_jogos__jogo-card');
     
     jogoCard.dataset.jogoId = jogo.id;
     
     // Preencher informações do jogo
-    jogoCard.querySelector('.campeonato').textContent = jogo.campeonato;
-    jogoCard.querySelector('.time-casa').textContent = jogo.time_casa;
-    jogoCard.querySelector('.time-visitante').textContent = jogo.time_visitante;
-    jogoCard.querySelector('.horario').textContent = formatarData(jogo.data_hora);
+    const paisNome = jogoCard.querySelector('.pais-nome');
+    paisNome.textContent = `🏴 ${jogo.pais || ''}`;
+    
+    jogoCard.querySelector('.campeonato-nome').textContent = jogo.campeonato;
+    
+    // Time da casa
+    jogoCard.querySelector('.time:first-child .time-nome').textContent = jogo.time_casa;
+    
+    // Time visitante
+    jogoCard.querySelector('.time:last-child .time-nome').textContent = jogo.time_visitante;
+    
+    // Adicionar emoji de relógio ao horário
+    const horarioElement = jogoCard.querySelector('.horario');
+    horarioElement.innerHTML = `<span>🕒</span><span>${formatarData(jogo.data_hora)}</span>`;
     
     // Preencher anotação existente
     const textarea = jogoCard.querySelector('.anotacao-texto');
@@ -67,20 +89,18 @@ function criarElementoJogo(jogo, anotacao) {
     
     // Configurar botões e eventos
     const btnExpandir = jogoCard.querySelector('.btn-expandir');
-    const btnAnotacao = jogoCard.querySelector('.btn-anotacao');
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
     const btnSalvar = jogoCard.querySelector('.btn-salvar');
     
-    btnExpandir.addEventListener('click', (e) => {
-        e.stopPropagation();
+    // Fazer o card inteiro ser clicável
+    jogoCard.querySelector('.jogo-header').addEventListener('click', () => {
         toggleAnotacao(jogoCard);
     });
     
-    btnAnotacao.addEventListener('click', (e) => {
+    // Manter o botão de expandir também clicável
+    btnExpandir.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (anotacaoDiv.style.display === 'none') {
-            mostrarAnotacao(jogoCard);
-        }
+        toggleAnotacao(jogoCard);
     });
     
     btnSalvar.addEventListener('click', () => salvarAnotacao(jogoCard));
@@ -141,10 +161,10 @@ async function salvarAnotacao(jogoCard) {
             },
             body: JSON.stringify({
                 jogo_id: jogoId,
-                time_casa: jogoCard.querySelector('.time-casa').textContent,
-                time_visitante: jogoCard.querySelector('.time-visitante').textContent,
+                time_casa: jogoCard.querySelector('.time:first-child .time-nome').textContent,
+                time_visitante: jogoCard.querySelector('.time:last-child .time-nome').textContent,
                 data_hora: new Date().toISOString(),
-                campeonato: jogoCard.querySelector('.campeonato').textContent,
+                campeonato: jogoCard.querySelector('.campeonato-nome').textContent,
                 texto: texto
             })
         });
@@ -170,15 +190,5 @@ function formatarData(timestamp) {
     return data.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit'
-    });
-}
-
-// Função para ordenar os jogos por prioridade e horário
-function ordenarJogos(jogos) {
-    return jogos.sort((a, b) => {
-        if (a.prioridade !== b.prioridade) {
-            return a.prioridade - b.prioridade;
-        }
-        return a.data_hora - b.data_hora;
     });
 }
