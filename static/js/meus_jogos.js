@@ -133,7 +133,7 @@ function criarElementoJogo(jogo, anotacao) {
     
     if (anotacao) {
         textarea.value = anotacao.texto;
-        anotacaoVisualizacao.textContent = anotacao.texto;
+        anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(anotacao.texto);
     }
     
     // Configurar botões e eventos
@@ -239,6 +239,35 @@ function desativarModoEdicao(jogoCard) {
     btnEditar.textContent = 'Editar';
 }
 
+// Função para formatar o texto para visualização (converter ** para <strong>)
+function formatarTextoVisualizacao(texto) {
+    if (!texto) return '';
+    
+    // Substituir ** por <strong> para negrito
+    let formatado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    return formatado;
+}
+
+// Função para mostrar o modal de salvamento
+function mostrarModalSalvamento() {
+    const modal = document.getElementById('modal-salvamento');
+    modal.classList.add('ativo');
+    
+    // Configurar eventos para fechar o modal
+    const fecharModal = modal.querySelector('.fechar-modal');
+    const btnOk = modal.querySelector('.btn-modal-ok');
+    
+    const fecharModalFn = () => {
+        modal.classList.remove('ativo');
+        fecharModal.removeEventListener('click', fecharModalFn);
+        btnOk.removeEventListener('click', fecharModalFn);
+    };
+    
+    fecharModal.addEventListener('click', fecharModalFn);
+    btnOk.addEventListener('click', fecharModalFn);
+}
+
 async function salvarAnotacao(jogoCard) {
     const jogoId = jogoCard.dataset.jogoId;
     const textarea = jogoCard.querySelector('.anotacao-texto');
@@ -267,13 +296,14 @@ async function salvarAnotacao(jogoCard) {
         });
         
         if (response.ok) {
-            // Atualizar o texto de visualização
-            anotacaoVisualizacao.textContent = texto;
+            // Atualizar o texto de visualização com formatação
+            anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(texto);
             
             // Voltar para o modo de visualização
             desativarModoEdicao(jogoCard);
             
-            alert('Anotação salva com sucesso!');
+            // Mostrar o modal de salvamento em vez do alerta
+            mostrarModalSalvamento();
         } else {
             throw new Error('Erro ao salvar anotação');
         }

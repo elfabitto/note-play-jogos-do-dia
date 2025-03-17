@@ -47,6 +47,22 @@
             </div>
         </div>
     </main>
+    
+    <!-- Modal de salvamento -->
+    <div id="modal-salvamento" class="modal">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <h3>Anotação Salva</h3>
+                <span class="fechar-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Sua anotação foi salva com sucesso!</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-ok">OK</button>
+            </div>
+        </div>
+    </div>
 
     <template id="template-jogo">
         <div class="jogo-card" data-jogo-id="">
@@ -76,8 +92,12 @@
                 </div>
             </div>
             <div class="jogo-anotacao" style="display: none;">
-                <textarea class="anotacao-texto" placeholder="Digite suas anotações sobre o jogo..."></textarea>
-                <button class="btn-salvar">Salvar</button>
+                <div class="anotacao-visualizacao"></div>
+                <textarea class="anotacao-texto" placeholder="Digite suas anotações sobre o jogo..." style="display: none;"></textarea>
+                <div class="botoes-edicao">
+                    <button class="btn-editar">Editar</button>
+                    <button class="btn-cancelar" style="display: none;">Cancelar</button>
+                </div>
             </div>
         </div>
     </template>

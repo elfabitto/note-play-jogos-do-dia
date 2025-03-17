@@ -233,8 +233,16 @@ async function carregarAnotacoes() {
             if (anotacao) {
                 card.classList.add('tem-anotacao');
                 const textarea = card.querySelector('.anotacao-texto');
-                if (textarea) {
+                const anotacaoVisualizacao = card.querySelector('.anotacao-visualizacao');
+                
+                if (textarea && anotacaoVisualizacao) {
+                    // Atualizar tanto o textarea quanto a visualização
                     textarea.value = anotacao.texto;
+                    anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(anotacao.texto);
+                    
+                    // Garantir que esteja no modo de visualização
+                    textarea.style.display = 'none';
+                    anotacaoVisualizacao.style.display = 'block';
                 }
             }
         });
@@ -272,7 +280,8 @@ function criarElementoJogo(jogo) {
     jogoCard.querySelector('.campeonato-nome').textContent = jogo.campeonato;
 
     // Time da casa
-    jogoCard.querySelector('.time:first-child .time-nome').textContent = jogo.time_casa;
+    const timeCasa = jogo.time_casa;
+    jogoCard.querySelector('.time:first-child .time-nome').textContent = timeCasa;
 
     // Time visitante
     jogoCard.querySelector('.time:last-child .time-nome').textContent = jogo.time_visitante;
@@ -281,10 +290,37 @@ function criarElementoJogo(jogo) {
     const horarioElement = jogoCard.querySelector('.horario');
     horarioElement.innerHTML = `<span>🕒</span><span>${formatarData(jogo.data_hora)}</span>`;
     
+    // Criar template de texto pré-escrito
+    const templateTexto = `Geral:
+_______________________
+**${timeCasa}**
+Destaques:
+-
+
+Observações:
+-
+
+_______________________
+**${jogo.time_visitante}**
+Destaques:
+-
+
+Observações:
+-`;
+    
+    // Preencher textarea com o template
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    textarea.value = templateTexto;
+    
     // Configurar botões e eventos
     const btnExpandir = jogoCard.querySelector('.btn-expandir');
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
-    const btnSalvar = jogoCard.querySelector('.btn-salvar');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    const btnCancelar = jogoCard.querySelector('.btn-cancelar');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    
+    // Inicializar a visualização com o template
+    anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(templateTexto);
     
     // Fazer o card inteiro ser clicável
     jogoCard.querySelector('.jogo-header').addEventListener('click', () => {
@@ -297,9 +333,33 @@ function criarElementoJogo(jogo) {
         toggleAnotacao(jogoCard);
     });
     
-    btnSalvar.addEventListener('click', () => salvarAnotacao(jogoCard));
+    // Configurar o botão de editar/salvar
+    btnEditar.addEventListener('click', () => {
+        const estaModoEdicao = btnEditar.textContent === 'Salvar';
+        
+        if (estaModoEdicao) {
+            salvarAnotacao(jogoCard);
+        } else {
+            ativarModoEdicao(jogoCard);
+        }
+    });
+    
+    // Configurar o botão de cancelar
+    btnCancelar.addEventListener('click', () => {
+        cancelarEdicao(jogoCard);
+    });
     
     return jogoElement;
+}
+
+// Função para formatar o texto para visualização (converter ** para <strong>)
+function formatarTextoVisualizacao(texto) {
+    if (!texto) return '';
+    
+    // Substituir ** por <strong> para negrito
+    let formatado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    return formatado;
 }
 
 function toggleAnotacao(jogoCard) {
@@ -316,11 +376,68 @@ function toggleAnotacao(jogoCard) {
 function mostrarAnotacao(jogoCard) {
     const anotacaoDiv = jogoCard.querySelector('.jogo-anotacao');
     const btnExpandir = jogoCard.querySelector('.btn-expandir i');
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    
+    // Garantir que esteja no modo de visualização
+    textarea.style.display = 'none';
+    anotacaoVisualizacao.style.display = 'block';
+    btnEditar.textContent = 'Editar';
     
     anotacaoDiv.style.display = 'block';
     anotacaoDiv.classList.remove('recolhido');
     anotacaoDiv.classList.add('expandido');
     btnExpandir.classList.add('fa-rotate-180');
+}
+
+function ativarModoEdicao(jogoCard) {
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    const btnCancelar = jogoCard.querySelector('.btn-cancelar');
+    
+    // Guardar o texto original para caso o usuário cancele a edição
+    jogoCard.dataset.textoOriginal = textarea.value;
+    
+    // Mostrar textarea e esconder visualização
+    textarea.style.display = 'block';
+    anotacaoVisualizacao.style.display = 'none';
+    
+    // Mudar o texto do botão para "Salvar" e mostrar botão cancelar
+    btnEditar.textContent = 'Salvar';
+    btnCancelar.style.display = 'block';
+    
+    // Focar no textarea
+    textarea.focus();
+}
+
+function desativarModoEdicao(jogoCard) {
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const btnEditar = jogoCard.querySelector('.btn-editar');
+    const btnCancelar = jogoCard.querySelector('.btn-cancelar');
+    
+    // Esconder textarea e mostrar visualização
+    textarea.style.display = 'none';
+    anotacaoVisualizacao.style.display = 'block';
+    
+    // Mudar o texto do botão para "Editar" e esconder botão cancelar
+    btnEditar.textContent = 'Editar';
+    btnCancelar.style.display = 'none';
+}
+
+function cancelarEdicao(jogoCard) {
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    
+    // Restaurar o texto original
+    if (jogoCard.dataset.textoOriginal) {
+        textarea.value = jogoCard.dataset.textoOriginal;
+    }
+    
+    // Desativar o modo de edição
+    desativarModoEdicao(jogoCard);
 }
 
 function esconderAnotacao(jogoCard) {
@@ -339,9 +456,30 @@ function esconderAnotacao(jogoCard) {
     }, 300);
 }
 
+// Função para mostrar o modal de salvamento
+function mostrarModalSalvamento() {
+    const modal = document.getElementById('modal-salvamento');
+    modal.classList.add('ativo');
+    
+    // Configurar eventos para fechar o modal
+    const fecharModal = modal.querySelector('.fechar-modal');
+    const btnOk = modal.querySelector('.btn-modal-ok');
+    
+    const fecharModalFn = () => {
+        modal.classList.remove('ativo');
+        fecharModal.removeEventListener('click', fecharModalFn);
+        btnOk.removeEventListener('click', fecharModalFn);
+    };
+    
+    fecharModal.addEventListener('click', fecharModalFn);
+    btnOk.addEventListener('click', fecharModalFn);
+}
+
 async function salvarAnotacao(jogoCard) {
     const jogoId = jogoCard.dataset.jogoId;
-    const texto = jogoCard.querySelector('.anotacao-texto').value;
+    const textarea = jogoCard.querySelector('.anotacao-texto');
+    const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
+    const texto = textarea.value;
     
     if (!texto.trim()) {
         alert('Por favor, digite uma anotação antes de salvar.');
@@ -365,9 +503,16 @@ async function salvarAnotacao(jogoCard) {
         });
         
         if (response.ok) {
+            // Atualizar o texto de visualização com formatação
+            anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(texto);
+            
+            // Voltar para o modo de visualização
+            desativarModoEdicao(jogoCard);
+            
             jogoCard.classList.add('tem-anotacao');
-            alert('Anotação salva com sucesso!');
-            esconderAnotacao(jogoCard);
+            
+            // Mostrar o modal de salvamento em vez do alerta
+            mostrarModalSalvamento();
         } else {
             throw new Error('Erro ao salvar anotação');
         }
