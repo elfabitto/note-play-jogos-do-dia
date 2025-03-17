@@ -88,9 +88,21 @@ function criarBotaoPais(nome, slug, alpha3, className) {
     paisFiltro.className = className === 'pais-principal' ? 'index__pais-principal' : 'index__pais-filtro';
     paisFiltro.dataset.pais = nome;
 
+    // Adicionar bandeira do país
+    const bandeiraPais = document.createElement('img');
+    bandeiraPais.className = 'index__bandeira-pais';
+    bandeiraPais.src = `https://flagcdn.com/${slug}.svg`;
+    bandeiraPais.alt = `Bandeira ${nome}`;
+    bandeiraPais.width = 20;
+    bandeiraPais.height = 15;
+    paisFiltro.appendChild(bandeiraPais);
+
+    // Adicionar espaço entre a bandeira e o código
+    const espaco = document.createTextNode(' ');
+    paisFiltro.appendChild(espaco);
+
     const codigoPais = document.createElement('span');
     codigoPais.textContent = getCodigoPais(nome, alpha3);
-
     paisFiltro.appendChild(codigoPais);
 
     paisFiltro.addEventListener('click', () => {
@@ -208,7 +220,21 @@ function criarElementoJogo(jogo) {
     
     // Preencher informações do jogo
     const paisNome = jogoCard.querySelector('.pais-nome');
-    paisNome.textContent = `🏴 ${jogo.pais || ''}`;
+    
+    // Criar elemento de imagem para a bandeira
+    const bandeiraPais = document.createElement('img');
+    bandeiraPais.className = 'jogo__bandeira-pais';
+    bandeiraPais.src = `https://flagcdn.com/${jogo.pais_slug || 'xx'}.svg`;
+    bandeiraPais.alt = `Bandeira ${jogo.pais || ''}`;
+    bandeiraPais.width = 20;
+    bandeiraPais.height = 15;
+    
+    // Limpar o conteúdo anterior
+    paisNome.innerHTML = '';
+    
+    // Adicionar a bandeira e o nome do país
+    paisNome.appendChild(bandeiraPais);
+    paisNome.appendChild(document.createTextNode(` ${jogo.pais || ''}`));
     
     jogoCard.querySelector('.campeonato-nome').textContent = jogo.campeonato;
 

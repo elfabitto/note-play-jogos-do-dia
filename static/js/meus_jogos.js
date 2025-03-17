@@ -67,7 +67,21 @@ function criarElementoJogo(jogo, anotacao) {
     
     // Preencher informações do jogo
     const paisNome = jogoCard.querySelector('.pais-nome');
-    paisNome.textContent = `🏴 ${jogo.pais || ''}`;
+    
+    // Criar elemento de imagem para a bandeira
+    const bandeiraPais = document.createElement('img');
+    bandeiraPais.className = 'jogo__bandeira-pais';
+    bandeiraPais.src = `https://flagcdn.com/${jogo.pais_slug || 'xx'}.svg`;
+    bandeiraPais.alt = `Bandeira ${jogo.pais || ''}`;
+    bandeiraPais.width = 20;
+    bandeiraPais.height = 15;
+    
+    // Limpar o conteúdo anterior
+    paisNome.innerHTML = '';
+    
+    // Adicionar a bandeira e o nome do país
+    paisNome.appendChild(bandeiraPais);
+    paisNome.appendChild(document.createTextNode(` ${jogo.pais || ''}`));
     
     jogoCard.querySelector('.campeonato-nome').textContent = jogo.campeonato;
     
