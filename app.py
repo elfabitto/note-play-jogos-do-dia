@@ -1,25 +1,22 @@
 from flask import Flask, render_template, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 import requests
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Inicializar o Firebase (certifique-se de ter o arquivo firebase-credentials.json)
+cred_path = os.path.join(os.path.dirname(__file__), 'firebase-credentials.json')
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+else:
+    print("AVISO: Arquivo de credenciais do Firebase não encontrado. O aplicativo funcionará, mas não salvará dados.")
+    db = None
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jogos.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.urandom(24)
-
-db = SQLAlchemy(app)
-
-class Anotacao(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    jogo_id = db.Column(db.String(100), nullable=False)  # ID do jogo no Sofascore
-    time_casa = db.Column(db.String(100), nullable=False)
-    time_visitante = db.Column(db.String(100), nullable=False)
-    data_hora = db.Column(db.DateTime, nullable=False)
-    campeonato = db.Column(db.String(100), nullable=False)
-    texto = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 @app.route('/')
 def index():
@@ -263,12 +260,22 @@ def get_jogos_do_dia():
 def get_jogos():
     jogos = get_jogos_do_dia()
     
-    # Verificar quais jogos têm anotações
-    anotacoes = Anotacao.query.filter(
-        db.func.date(Anotacao.data_hora) == db.func.date(datetime.now())
-    ).all()
+    if not db:
+        # Se o Firebase não estiver configurado, retornar jogos sem verificar anotações
+        return jsonify(jogos)
     
-    jogos_ids_com_anotacao = {str(a.jogo_id) for a in anotacoes}
+    # Verificar quais jogos têm anotações
+    hoje = datetime.now().date()
+    
+    # Consultar anotações no Firestore
+    anotacoes_ref = db.collection('anotacoes').stream()
+    jogos_ids_com_anotacao = set()
+    
+    for doc in anotacoes_ref:
+        anotacao = doc.to_dict()
+        data_hora = anotacao.get('data_hora')
+        if isinstance(data_hora, datetime) and data_hora.date() == hoje:
+            jogos_ids_com_anotacao.add(anotacao.get('jogo_id'))
     
     for jogo in jogos:
         jogo['tem_anotacao'] = jogo['id'] in jogos_ids_com_anotacao
@@ -277,33 +284,60 @@ def get_jogos():
 
 @app.route('/api/anotacoes', methods=['GET'])
 def get_anotacoes():
-    anotacoes = Anotacao.query.filter(
-        db.func.date(Anotacao.data_hora) == db.func.date(datetime.utcnow())
-    ).all()
-    return jsonify([{
-        'id': a.id,
-        'jogo_id': a.jogo_id,
-        'time_casa': a.time_casa,
-        'time_visitante': a.time_visitante,
-        'texto': a.texto
-    } for a in anotacoes])
+    if not db:
+        return jsonify([])
+    
+    # Obter a data atual (apenas a parte da data, sem a hora)
+    hoje = datetime.utcnow().date()
+    
+    # Consultar anotações no Firestore
+    anotacoes_ref = db.collection('anotacoes')
+    # Não podemos filtrar diretamente por data no Firestore como no SQL
+    # Então vamos buscar todas as anotações e filtrar no código
+    anotacoes_docs = anotacoes_ref.stream()
+    
+    resultado = []
+    for doc in anotacoes_docs:
+        anotacao = doc.to_dict()
+        # Converter o timestamp do Firestore para datetime
+        data_hora = anotacao.get('data_hora')
+        if isinstance(data_hora, datetime):
+            # Se a data da anotação for hoje, incluir no resultado
+            if data_hora.date() == hoje:
+                anotacao['id'] = doc.id
+                resultado.append({
+                    'id': doc.id,
+                    'jogo_id': anotacao.get('jogo_id'),
+                    'time_casa': anotacao.get('time_casa'),
+                    'time_visitante': anotacao.get('time_visitante'),
+                    'texto': anotacao.get('texto')
+                })
+    
+    return jsonify(resultado)
 
 @app.route('/api/anotacoes', methods=['POST'])
 def criar_anotacao():
+    if not db:
+        return jsonify({'status': 'error', 'message': 'Firebase não configurado'}), 500
+    
     data = request.json
-    anotacao = Anotacao(
-        jogo_id=data['jogo_id'],
-        time_casa=data['time_casa'],
-        time_visitante=data['time_visitante'],
-        data_hora=datetime.fromisoformat(data['data_hora']),
-        campeonato=data['campeonato'],
-        texto=data['texto']
-    )
-    db.session.add(anotacao)
-    db.session.commit()
-    return jsonify({'status': 'success'})
+    
+    # Converter a string ISO para objeto datetime
+    data_hora = datetime.fromisoformat(data['data_hora'])
+    
+    # Criar documento no Firestore
+    anotacao_ref = db.collection('anotacoes').document()  # ID automático
+    anotacao_ref.set({
+        'jogo_id': data['jogo_id'],
+        'time_casa': data['time_casa'],
+        'time_visitante': data['time_visitante'],
+        'data_hora': data_hora,
+        'campeonato': data['campeonato'],
+        'texto': data['texto'],
+        'created_at': firestore.SERVER_TIMESTAMP
+    })
+    
+    return jsonify({'status': 'success', 'id': anotacao_ref.id})
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
