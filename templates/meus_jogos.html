@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Jogos - Anotações de Jogos do Dia</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons8-stadium-32.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/meus_jogos.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,6 +13,7 @@
     <header class="header-fixo">
         <div class="meus_jogos__header-content">
             <div class="header-title">
+                <img src="{{ url_for('static', filename='icons8-stadium-32.ico') }}" alt="Logo" class="header-logo">
                 <h1>Anotações de Jogos do Dia</h1>
                 <nav>
                     <a href="/" class="nav-link">Todos os Jogos</a>
