@@ -6,18 +6,27 @@ import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Inicializar o Firebase (certifique-se de ter o arquivo firebase-credentials.json)
-cred_path = os.path.join(os.path.dirname(__file__), 'firebase-credentials.json')
-if os.path.exists(cred_path):
-    cred = credentials.Certificate(cred_path)
+# Inicializar o Firebase
+if os.environ.get('FIREBASE_CREDENTIALS'):
+    # Usar credenciais do ambiente em produção
+    import json
+    cred_dict = json.loads(os.environ.get('FIREBASE_CREDENTIALS'))
+    cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
     db = firestore.client()
 else:
-    print("AVISO: Arquivo de credenciais do Firebase não encontrado. O aplicativo funcionará, mas não salvará dados.")
-    db = None
+    # Tentar usar arquivo local em desenvolvimento
+    cred_path = os.path.join(os.path.dirname(__file__), 'firebase-credentials.json')
+    if os.path.exists(cred_path):
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+    else:
+        print("AVISO: Credenciais do Firebase não encontradas. O aplicativo funcionará, mas não salvará dados.")
+        db = None
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 
 @app.route('/')
 def index():
@@ -41,7 +50,7 @@ def get_jogos_do_dia(data=None):
     
     try:
         headers = {
-            "x-apisports-key": "4f5339fa4fe66b4a73b03dd148337a64"  # Chave fornecida pelo usuário
+            "x-apisports-key": os.environ.get('FOOTBALL_API_KEY', '4f5339fa4fe66b4a73b03dd148337a64')
         }
         
         params = {"date": data}
@@ -339,4 +348,5 @@ def criar_anotacao():
     return jsonify({'status': 'success', 'id': anotacao_ref.id})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
