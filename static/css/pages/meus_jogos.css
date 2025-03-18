@@ -42,25 +42,93 @@
 }
 
 .meus_jogos__header-content {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
+    padding: 0 1rem;
 }
 
 .meus_jogos__info-container {
-    margin-bottom: 0.5rem;
+    margin: 0.5rem 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: rgba(255, 255, 255, 0.1);
-    padding: 0.25rem 0.5rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 4px;
     z-index: 2;
+    gap: 0.75rem;
 }
 
-.meus_jogos__info-container h2 {
+.jogos-container {
+    max-width: 1000px;
+    margin: 0.75rem auto 0;
+    padding: 0 1rem;
+}
+
+#lista-jogos {
+    margin: 0 -1rem;  /* Remove o padding lateral dos cards */
+}
+
+.meus_jogos__header-top {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-width: max-content;
+}
+
+.meus_jogos__header-top h2 {
     color: white;
     font-size: 1rem;
     margin: 0;
+    white-space: nowrap;
+}
+
+.data-atual {
+    white-space: nowrap;
+}
+
+.meus_jogos__busca {
+    flex: 1;
+    max-width: 400px;
+}
+
+.meus_jogos__busca-container {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.meus_jogos__busca-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--borda-raio);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.meus_jogos__busca-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.meus_jogos__busca-input:focus {
+    outline: none;
+    border-color: var(--cor-secundaria);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.meus_jogos__busca-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--cor-secundaria);
+    border: none;
+    border-radius: var(--borda-raio);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.meus_jogos__busca-btn:hover {
+    background-color: #2980b9;
 }
 
 .meus_jogos__mensagem-vazia {
@@ -128,7 +196,25 @@
     
     .meus_jogos__info-container {
         flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .meus_jogos__header-top {
+        flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+    }
+
+    .meus_jogos__busca {
+        max-width: none;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .meus_jogos__info-container {
+        padding: 0.75rem;
     }
 }

@@ -3,7 +3,6 @@ let paisesSelecionados = new Set();
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarJogos();
-    carregarAnotacoes();
     atualizarDataAtual();
     
     // Configurar botão de toggle do filtro
@@ -63,7 +62,11 @@ const PAISES_PRINCIPAIS = [
     { nome: 'France', slug: 'fr', alpha3: 'FRA' },
     { nome: 'Netherlands', slug: 'nl', alpha3: 'NED' },
     { nome: 'Argentina', slug: 'ar', alpha3: 'ARG' },
-    { nome: 'Saudi Arabia', slug: 'sa', alpha3: 'KSA' }
+    { nome: 'Saudi Arabia', slug: 'sa', alpha3: 'KSA' },
+    { nome: 'United States', slug: 'us', alpha3: 'USA' },
+    { nome: 'Colombia', slug: 'co', alpha3: 'COL' },
+    { nome: 'Mexico', slug: 'mx', alpha3: 'MEX' },
+    { nome: 'World', slug: 'un', alpha3: 'INT' }
 ];
 
 // Função para criar os botões de filtro de países
@@ -157,7 +160,11 @@ function filtrarJogos() {
     
     jogosCards.forEach(card => {
         const paisNome = card.querySelector('.pais-nome');
-        const pais = paisNome.textContent;
+        // Pegar o último nó de texto que contém apenas o nome do país
+        const pais = Array.from(paisNome.childNodes)
+            .filter(node => node.nodeType === Node.TEXT_NODE)
+            .map(node => node.textContent.trim())
+            .pop();
         
         if (paisesSelecionados.size === 0 || paisesSelecionados.has(pais)) {
             card.style.display = '';
@@ -209,6 +216,9 @@ async function carregarJogos() {
             const jogoElement = criarElementoJogo(jogo);
             listaJogos.appendChild(jogoElement);
         });
+
+        // Carregar anotações após carregar os jogos
+        await carregarAnotacoes();
     } catch (error) {
         console.error('Erro ao carregar jogos:', error);
     }
@@ -286,9 +296,9 @@ function criarElementoJogo(jogo) {
     // Time visitante
     jogoCard.querySelector('.time:last-child .time-nome').textContent = jogo.time_visitante;
 
-    // Adicionar emoji de relógio ao horário
+    // Adicionar horário e data
     const horarioElement = jogoCard.querySelector('.horario');
-    horarioElement.innerHTML = `<span>🕒</span><span>${formatarData(jogo.data_hora)}</span>`;
+    horarioElement.innerHTML = formatarData(jogo.data_hora);
     
     // Criar template de texto pré-escrito
     const templateTexto = `Geral:
@@ -528,9 +538,17 @@ function formatarData(timestamp) {
     // O Sofascore envia timestamp em segundos
     const data = new Date(timestamp * 1000);
     
-    return data.toLocaleTimeString('pt-BR', {
+    const horario = data.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false
     });
+
+    const dataFormatada = data.toLocaleDateString('pt-BR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    return `<span>📅 ${dataFormatada}</span> <span>🕒 ${horario}</span>`;
 }

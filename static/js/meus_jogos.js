@@ -1,7 +1,94 @@
+// Armazenar dados originais para filtrar
+let todosJogos = [];
+let todasAnotacoes = {};
+
 document.addEventListener('DOMContentLoaded', () => {
     carregarMeusJogos();
     atualizarDataAtual();
+    
+    // Configurar busca
+    const buscaInput = document.getElementById('busca-input');
+    const buscaBtn = document.getElementById('busca-btn');
+    
+    buscaInput.addEventListener('input', () => {
+        filtrarJogos(buscaInput.value);
+    });
+    
+    buscaBtn.addEventListener('click', () => {
+        filtrarJogos(buscaInput.value);
+    });
+    
+    // Permitir busca ao pressionar Enter
+    buscaInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            filtrarJogos(buscaInput.value);
+        }
+    });
 });
+
+function filtrarJogos(termoBusca) {
+    const listaJogos = document.getElementById('lista-jogos');
+    listaJogos.innerHTML = '';
+    
+    if (!termoBusca.trim()) {
+        // Se não houver termo de busca, mostrar todos os jogos
+        renderizarJogos(todosJogos);
+        return;
+    }
+    
+    const termoLower = termoBusca.toLowerCase();
+    
+    const jogosFiltrados = todosJogos.filter(jogo => {
+        const anotacao = todasAnotacoes[jogo.id];
+        
+        // Verificar se o termo está no nome dos times
+        const timeCasaMatch = jogo.time_casa.toLowerCase().includes(termoLower);
+        const timeVisitanteMatch = jogo.time_visitante.toLowerCase().includes(termoLower);
+        
+        // Verificar se o termo está no texto da anotação
+        const anotacaoMatch = anotacao && anotacao.texto.toLowerCase().includes(termoLower);
+        
+        return timeCasaMatch || timeVisitanteMatch || anotacaoMatch;
+    });
+    
+    if (jogosFiltrados.length === 0) {
+        listaJogos.innerHTML = `
+            <div class="meus_jogos__mensagem-vazia">
+                <p>Nenhum resultado encontrado para "${termoBusca}"</p>
+                <button onclick="limparBusca()" class="meus_jogos__btn-voltar">Limpar busca</button>
+            </div>
+        `;
+        return;
+    }
+    
+    renderizarJogos(jogosFiltrados);
+}
+
+function limparBusca() {
+    const buscaInput = document.getElementById('busca-input');
+    buscaInput.value = '';
+    renderizarJogos(todosJogos);
+}
+
+function renderizarJogos(jogos) {
+    const listaJogos = document.getElementById('lista-jogos');
+    listaJogos.innerHTML = '';
+    
+    if (jogos.length === 0) {
+        listaJogos.innerHTML = `
+            <div class="meus_jogos__mensagem-vazia">
+                <p>Você ainda não fez anotações em nenhum jogo hoje.</p>
+                <a href="/" class="meus_jogos__btn-voltar">Ver todos os jogos</a>
+            </div>
+        `;
+        return;
+    }
+    
+    jogos.forEach(jogo => {
+        const jogoElement = criarElementoJogo(jogo, todasAnotacoes[jogo.id]);
+        listaJogos.appendChild(jogoElement);
+    });
+}
 
 // Função para obter o código de país correto para a bandeira
 function getCodigoBandeira(pais, slug) {
@@ -55,35 +142,19 @@ async function carregarMeusJogos() {
         const jogosResponse = await fetch('/api/jogos');
         const jogos = await jogosResponse.json();
         
-        // Criar um mapa de jogos com anotações
-        const jogosComAnotacoes = jogos.filter(jogo => 
-            anotacoes.some(anotacao => anotacao.jogo_id === jogo.id)
-        );
+        // Criar um mapa de jogos com anotações e ordenar por data (mais recente primeiro)
+        todosJogos = jogos
+            .filter(jogo => anotacoes.some(anotacao => anotacao.jogo_id === jogo.id))
+            .sort((a, b) => b.data_hora - a.data_hora); // Ordem decrescente
         
         // Mapear anotações por jogo_id
-        const anotacoesPorJogo = {};
+        todasAnotacoes = {};
         anotacoes.forEach(anotacao => {
-            anotacoesPorJogo[anotacao.jogo_id] = anotacao;
+            todasAnotacoes[anotacao.jogo_id] = anotacao;
         });
         
-        // Renderizar jogos com anotações
-        const listaJogos = document.getElementById('lista-jogos');
-        listaJogos.innerHTML = '';
-        
-        if (jogosComAnotacoes.length === 0) {
-            listaJogos.innerHTML = `
-                <div class="meus_jogos__mensagem-vazia">
-                    <p>Você ainda não fez anotações em nenhum jogo hoje.</p>
-                    <a href="/" class="meus_jogos__btn-voltar">Ver todos os jogos</a>
-                </div>
-            `;
-            return;
-        }
-        
-        jogosComAnotacoes.forEach(jogo => {
-            const jogoElement = criarElementoJogo(jogo, anotacoesPorJogo[jogo.id]);
-            listaJogos.appendChild(jogoElement);
-        });
+        // Renderizar jogos
+        renderizarJogos(todosJogos);
     } catch (error) {
         console.error('Erro ao carregar meus jogos:', error);
     }
@@ -123,9 +194,9 @@ function criarElementoJogo(jogo, anotacao) {
     // Time visitante
     jogoCard.querySelector('.time:last-child .time-nome').textContent = jogo.time_visitante;
     
-    // Adicionar emoji de relógio ao horário
+    // Adicionar horário e data
     const horarioElement = jogoCard.querySelector('.horario');
-    horarioElement.innerHTML = `<span>🕒</span><span>${formatarData(jogo.data_hora)}</span>`;
+    horarioElement.innerHTML = formatarData(jogo.data_hora);
     
     // Preencher anotação existente
     const textarea = jogoCard.querySelector('.anotacao-texto');
@@ -316,11 +387,20 @@ async function salvarAnotacao(jogoCard) {
 function formatarData(timestamp) {
     if (!timestamp) return '';
     
-    // O Sofascore envia timestamp em segundos, precisamos converter para milissegundos
+    // O Sofascore envia timestamp em segundos
     const data = new Date(timestamp * 1000);
     
-    return data.toLocaleTimeString('pt-BR', {
+    const horario = data.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
     });
+
+    const dataFormatada = data.toLocaleDateString('pt-BR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    return `<span>📅 ${dataFormatada}</span> <span>🕒 ${horario}</span>`;
 }

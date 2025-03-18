@@ -264,18 +264,13 @@ def get_jogos():
         # Se o Firebase não estiver configurado, retornar jogos sem verificar anotações
         return jsonify(jogos)
     
-    # Verificar quais jogos têm anotações
-    hoje = datetime.now().date()
-    
     # Consultar anotações no Firestore
     anotacoes_ref = db.collection('anotacoes').stream()
     jogos_ids_com_anotacao = set()
     
     for doc in anotacoes_ref:
         anotacao = doc.to_dict()
-        data_hora = anotacao.get('data_hora')
-        if isinstance(data_hora, datetime) and data_hora.date() == hoje:
-            jogos_ids_com_anotacao.add(anotacao.get('jogo_id'))
+        jogos_ids_com_anotacao.add(anotacao.get('jogo_id'))
     
     for jogo in jogos:
         jogo['tem_anotacao'] = jogo['id'] in jogos_ids_com_anotacao
@@ -287,31 +282,21 @@ def get_anotacoes():
     if not db:
         return jsonify([])
     
-    # Obter a data atual (apenas a parte da data, sem a hora)
-    hoje = datetime.utcnow().date()
-    
     # Consultar anotações no Firestore
     anotacoes_ref = db.collection('anotacoes')
-    # Não podemos filtrar diretamente por data no Firestore como no SQL
-    # Então vamos buscar todas as anotações e filtrar no código
     anotacoes_docs = anotacoes_ref.stream()
     
     resultado = []
     for doc in anotacoes_docs:
         anotacao = doc.to_dict()
-        # Converter o timestamp do Firestore para datetime
-        data_hora = anotacao.get('data_hora')
-        if isinstance(data_hora, datetime):
-            # Se a data da anotação for hoje, incluir no resultado
-            if data_hora.date() == hoje:
-                anotacao['id'] = doc.id
-                resultado.append({
-                    'id': doc.id,
-                    'jogo_id': anotacao.get('jogo_id'),
-                    'time_casa': anotacao.get('time_casa'),
-                    'time_visitante': anotacao.get('time_visitante'),
-                    'texto': anotacao.get('texto')
-                })
+        anotacao['id'] = doc.id
+        resultado.append({
+            'id': doc.id,
+            'jogo_id': anotacao.get('jogo_id'),
+            'time_casa': anotacao.get('time_casa'),
+            'time_visitante': anotacao.get('time_visitante'),
+            'texto': anotacao.get('texto')
+        })
     
     return jsonify(resultado)
 
