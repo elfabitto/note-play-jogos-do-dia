@@ -1,7 +1,21 @@
 // Armazenar países selecionados para filtro
 let paisesSelecionados = new Set();
+let dataAtual = new Date();
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificar se estamos na página de amanhã
+    const isAmanha = window.location.pathname === '/amanha';
+    if (isAmanha) {
+        // Ajustar para o fuso horário de São Paulo
+        const spDate = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+        dataAtual = new Date(spDate.setDate(spDate.getDate() + 1));
+        document.getElementById('amanha-link').classList.add('active');
+        document.getElementById('hoje-link').classList.remove('active');
+    } else {
+        // Ajustar para o fuso horário de São Paulo
+        dataAtual = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+    }
+    
     carregarJogos();
     atualizarDataAtual();
     
@@ -175,7 +189,6 @@ function filtrarJogos() {
 }
 
 function atualizarDataAtual() {
-    const dataAtual = new Date();
     const dataFormatada = dataAtual.toLocaleDateString('pt-BR', {
         weekday: 'long',
         day: 'numeric',
@@ -193,7 +206,8 @@ function getHoraLocal(timestamp) {
 
 async function carregarJogos() {
     try {
-        const response = await fetch('/api/jogos');
+        const dataParam = dataAtual.toISOString().split('T')[0];
+        const response = await fetch(`/api/jogos?date=${dataParam}`);
         const jogos = await response.json();
         const listaJogos = document.getElementById('lista-jogos');
         listaJogos.innerHTML = '';

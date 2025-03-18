@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 import os
 import requests
 import firebase_admin
@@ -26,9 +27,16 @@ def index():
 def meus_jogos():
     return render_template('meus_jogos.html')
 
-def get_jogos_do_dia():
+@app.route('/amanha')
+def amanha():
+    return render_template('index.html')
+
+def get_jogos_do_dia(data=None):
     # Usar apenas a API-Football
-    hoje = datetime.now().strftime('%Y-%m-%d')
+    if data is None:
+        tz = pytz.timezone('America/Sao_Paulo')
+        data = datetime.now(tz).strftime('%Y-%m-%d')
+    
     url_api_football = "https://v3.football.api-sports.io/fixtures"
     
     try:
@@ -36,7 +44,7 @@ def get_jogos_do_dia():
             "x-apisports-key": "4f5339fa4fe66b4a73b03dd148337a64"  # Chave fornecida pelo usuário
         }
         
-        params = {"date": hoje}
+        params = {"date": data}
         
         response = requests.get(url_api_football, headers=headers, params=params)
         
@@ -258,7 +266,13 @@ def get_jogos_do_dia():
 
 @app.route('/api/jogos')
 def get_jogos():
-    jogos = get_jogos_do_dia()
+    data = request.args.get('date')
+    if data:
+        data_formatada = data
+    else:
+        data_formatada = datetime.now().strftime('%Y-%m-%d')
+    
+    jogos = get_jogos_do_dia(data_formatada)
     
     if not db:
         # Se o Firebase não estiver configurado, retornar jogos sem verificar anotações

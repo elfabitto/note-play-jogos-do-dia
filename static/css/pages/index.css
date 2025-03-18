@@ -1,5 +1,38 @@
 /* Estilos específicos para a página index */
 
+nav {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.nav-group {
+    display: flex;
+    gap: 0.15rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.15rem;
+    border-radius: var(--borda-raio);
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--borda-raio);
+    transition: all 0.3s;
+    font-size: 0.8rem;
+}
+
+.nav-link:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
 .index__filtro-container {
     position: relative;
     margin-top: 0.5rem;
@@ -233,6 +266,22 @@
 
 /* Responsividade */
 @media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .nav-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem;
+    }
+
+    .nav-link {
+        text-align: center;
+    }
+
     .index__paises-principais {
         flex-wrap: wrap;
         margin-right: 0;
