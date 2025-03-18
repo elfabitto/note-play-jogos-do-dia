@@ -406,9 +406,30 @@ main {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
+    z-index: 1000;
     justify-content: center;
     align-items: center;
+}
+
+/* Estilos para mensagens de erro */
+.mensagem-erro {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: center;
+}
+
+.mensagem-erro h3 {
+    color: #e74c3c;
+    margin-bottom: 10px;
+}
+
+.mensagem-erro p {
+    margin-bottom: 10px;
+    line-height: 1.5;
 }
 
 .modal.ativo {

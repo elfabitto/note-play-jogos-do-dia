@@ -208,9 +208,29 @@ async function carregarJogos() {
     try {
         const dataParam = dataAtual.toISOString().split('T')[0];
         const response = await fetch(`/api/jogos?date=${dataParam}`);
-        const jogos = await response.json();
+        const dados = await response.json();
         const listaJogos = document.getElementById('lista-jogos');
         listaJogos.innerHTML = '';
+        
+        // Verificar se atingiu o limite da API
+        if (dados.limite_api_atingido) {
+            console.log("Limite de API atingido:", dados.mensagem);
+            
+            // Exibir mensagem de limite atingido
+            listaJogos.innerHTML = `
+                <div class="mensagem-erro">
+                    <h3>Limite de API Atingido</h3>
+                    <p>${dados.mensagem}</p>
+                    <p>Enquanto isso, você ainda pode acessar suas anotações existentes na página "Meus Jogos".</p>
+                </div>
+            `;
+            
+            // Atualizar quantidade total de jogos
+            document.getElementById('quantidade-jogos').textContent = '0';
+            return;
+        }
+        
+        const jogos = dados;
         
         // Atualizar quantidade total de jogos
         document.getElementById('quantidade-jogos').textContent = jogos.length;
@@ -235,6 +255,15 @@ async function carregarJogos() {
         await carregarAnotacoes();
     } catch (error) {
         console.error('Erro ao carregar jogos:', error);
+        
+        // Exibir mensagem de erro genérica
+        const listaJogos = document.getElementById('lista-jogos');
+        listaJogos.innerHTML = `
+            <div class="mensagem-erro">
+                <h3>Erro ao carregar jogos</h3>
+                <p>Parece que você atingiu o limite de solicitações da API-Football. Por favor, tente novamente mais tarde.</p>
+            </div>
+        `;
     }
 }
 
@@ -483,20 +512,39 @@ function esconderAnotacao(jogoCard) {
 // Função para mostrar o modal de salvamento
 function mostrarModalSalvamento() {
     const modal = document.getElementById('modal-salvamento');
+    
+    // Verificar se o modal existe
+    if (!modal) {
+        console.error('Modal de salvamento não encontrado');
+        return;
+    }
+    
     modal.classList.add('ativo');
     
     // Configurar eventos para fechar o modal
     const fecharModal = modal.querySelector('.fechar-modal');
     const btnOk = modal.querySelector('.btn-modal-ok');
     
+    // Remover event listeners anteriores para evitar duplicação
     const fecharModalFn = () => {
         modal.classList.remove('ativo');
-        fecharModal.removeEventListener('click', fecharModalFn);
-        btnOk.removeEventListener('click', fecharModalFn);
+        
+        if (fecharModal) {
+            fecharModal.removeEventListener('click', fecharModalFn);
+        }
+        
+        if (btnOk) {
+            btnOk.removeEventListener('click', fecharModalFn);
+        }
     };
     
-    fecharModal.addEventListener('click', fecharModalFn);
-    btnOk.addEventListener('click', fecharModalFn);
+    if (fecharModal) {
+        fecharModal.addEventListener('click', fecharModalFn);
+    }
+    
+    if (btnOk) {
+        btnOk.addEventListener('click', fecharModalFn);
+    }
 }
 
 async function salvarAnotacao(jogoCard) {

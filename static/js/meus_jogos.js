@@ -134,24 +134,59 @@ function atualizarDataAtual() {
 
 async function carregarMeusJogos() {
     try {
+        console.log("Recarregando dados do servidor...");
+        
         // Primeiro, carregar todas as anotações
-        const anotacoesResponse = await fetch('/api/anotacoes');
+        const anotacoesResponse = await fetch('/api/anotacoes?nocache=' + new Date().getTime());
         const anotacoes = await anotacoesResponse.json();
         
-        // Depois, carregar todos os jogos
-        const jogosResponse = await fetch('/api/jogos');
-        const jogos = await jogosResponse.json();
-        
-        // Criar um mapa de jogos com anotações e ordenar por data (mais recente primeiro)
-        todosJogos = jogos
-            .filter(jogo => anotacoes.some(anotacao => anotacao.jogo_id === jogo.id))
-            .sort((a, b) => b.data_hora - a.data_hora); // Ordem decrescente
+        console.log("Anotações carregadas:", anotacoes);
         
         // Mapear anotações por jogo_id
         todasAnotacoes = {};
         anotacoes.forEach(anotacao => {
             todasAnotacoes[anotacao.jogo_id] = anotacao;
         });
+        
+        // Criar jogos manualmente a partir das anotações
+        todosJogos = [];
+        
+        // Criar um conjunto de IDs de jogos únicos das anotações
+        const jogosIds = new Set();
+        anotacoes.forEach(anotacao => {
+            jogosIds.add(anotacao.jogo_id);
+        });
+        
+        console.log("IDs de jogos únicos das anotações:", Array.from(jogosIds));
+        
+        // Para cada ID de jogo único, criar um objeto de jogo
+        Array.from(jogosIds).forEach(jogoId => {
+            // Pegar a primeira anotação para este jogo para obter informações do jogo
+            const anotacao = anotacoes.find(a => a.jogo_id === jogoId);
+            
+            if (anotacao) {
+                // Criar um objeto de jogo a partir da anotação
+                const jogo = {
+                    id: anotacao.jogo_id,
+                    time_casa: anotacao.time_casa,
+                    time_visitante: anotacao.time_visitante,
+                    data_hora: Date.now() / 1000, // Timestamp atual em segundos
+                    campeonato: 'Desconhecido', // Valor padrão
+                    pais: 'World', // Valor padrão
+                    pais_slug: 'un', // Valor padrão
+                    alpha3: 'INT', // Valor padrão
+                    tem_anotacao: true
+                };
+                
+                todosJogos.push(jogo);
+                console.log(`Jogo criado: ${jogo.id} (${jogo.time_casa} vs ${jogo.time_visitante})`);
+            }
+        });
+        
+        // Ordenar jogos (mais recente primeiro)
+        todosJogos.sort((a, b) => b.data_hora - a.data_hora);
+        
+        console.log("Jogos criados:", todosJogos.length);
         
         // Renderizar jogos
         renderizarJogos(todosJogos);
@@ -166,6 +201,11 @@ function criarElementoJogo(jogo, anotacao) {
     const jogoCard = jogoElement.querySelector('.meus_jogos__jogo-card');
     
     jogoCard.dataset.jogoId = jogo.id;
+    
+    // Armazenar o ID da anotação se existir
+    if (anotacao && anotacao.id) {
+        jogoCard.dataset.anotacaoId = anotacao.id;
+    }
     
     // Preencher informações do jogo
     const paisNome = jogoCard.querySelector('.pais-nome');
@@ -341,9 +381,12 @@ function mostrarModalSalvamento() {
 
 async function salvarAnotacao(jogoCard) {
     const jogoId = jogoCard.dataset.jogoId;
+    const anotacaoId = jogoCard.dataset.anotacaoId; // Obter o ID da anotação se existir
     const textarea = jogoCard.querySelector('.anotacao-texto');
     const anotacaoVisualizacao = jogoCard.querySelector('.anotacao-visualizacao');
     const texto = textarea.value;
+    
+    console.log(`Salvando anotação para jogo ${jogoId}, anotação ID: ${anotacaoId || 'nova'}`);
     
     if (!texto.trim()) {
         alert('Por favor, digite uma anotação antes de salvar.');
@@ -351,22 +394,58 @@ async function salvarAnotacao(jogoCard) {
     }
     
     try {
+        // Preparar os dados para enviar
+        const dadosAnotacao = {
+            jogo_id: jogoId,
+            time_casa: jogoCard.querySelector('.time:first-child .time-nome').textContent,
+            time_visitante: jogoCard.querySelector('.time:last-child .time-nome').textContent,
+            data_hora: new Date().toISOString(),
+            campeonato: jogoCard.querySelector('.campeonato-nome').textContent,
+            texto: texto
+        };
+        
+        // Se tiver ID da anotação, incluir para atualizar em vez de criar nova
+        if (anotacaoId) {
+            dadosAnotacao.id = anotacaoId;
+            console.log(`Atualizando anotação existente com ID: ${anotacaoId}`);
+        } else {
+            console.log(`Criando nova anotação para jogo ${jogoId}`);
+        }
+        
+        console.log("Dados a serem enviados:", dadosAnotacao);
+        
         const response = await fetch('/api/anotacoes', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             },
-            body: JSON.stringify({
-                jogo_id: jogoId,
-                time_casa: jogoCard.querySelector('.time:first-child .time-nome').textContent,
-                time_visitante: jogoCard.querySelector('.time:last-child .time-nome').textContent,
-                data_hora: new Date().toISOString(),
-                campeonato: jogoCard.querySelector('.campeonato-nome').textContent,
-                texto: texto
-            })
+            body: JSON.stringify(dadosAnotacao)
         });
         
         if (response.ok) {
+            const resultado = await response.json();
+            console.log("Resposta do servidor:", resultado);
+            
+            // Se for uma nova anotação, armazenar o ID retornado para futuras edições
+            if (!anotacaoId && resultado.id) {
+                jogoCard.dataset.anotacaoId = resultado.id;
+                console.log(`Novo ID de anotação recebido: ${resultado.id}`);
+                
+                // Atualizar também no objeto de anotações
+                if (todasAnotacoes[jogoId]) {
+                    todasAnotacoes[jogoId].id = resultado.id;
+                }
+            }
+            
+            // Atualizar o texto da anotação no objeto de dados
+            if (todasAnotacoes[jogoId]) {
+                todasAnotacoes[jogoId].texto = texto;
+                console.log(`Texto da anotação atualizado no objeto local`);
+            }
+            
             // Atualizar o texto de visualização com formatação
             anotacaoVisualizacao.innerHTML = formatarTextoVisualizacao(texto);
             
@@ -375,8 +454,18 @@ async function salvarAnotacao(jogoCard) {
             
             // Mostrar o modal de salvamento em vez do alerta
             mostrarModalSalvamento();
+            
+            // Recarregar a página para garantir que os dados estejam atualizados
+            setTimeout(() => {
+                console.log("Recarregando a página para atualizar os dados...");
+                // Forçar recarga completa, ignorando o cache
+                const novaURL = window.location.href.split('?')[0] + '?nocache=' + new Date().getTime();
+                console.log(`Redirecionando para: ${novaURL}`);
+                window.location.href = novaURL;
+            }, 1500); // Atraso de 1.5 segundos para garantir que o modal seja exibido antes do reload
         } else {
-            throw new Error('Erro ao salvar anotação');
+            const errorData = await response.json();
+            throw new Error(`Erro ao salvar anotação: ${errorData.message || response.statusText}`);
         }
     } catch (error) {
         console.error('Erro ao salvar anotação:', error);

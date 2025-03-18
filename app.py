@@ -46,6 +46,8 @@ def get_jogos_do_dia(data=None):
         tz = pytz.timezone('America/Sao_Paulo')
         data = datetime.now(tz).strftime('%Y-%m-%d')
     
+    print(f"Buscando jogos para a data: {data}")
+    
     url_api_football = "https://v3.football.api-sports.io/fixtures"
     
     try:
@@ -55,14 +57,23 @@ def get_jogos_do_dia(data=None):
         
         params = {"date": data}
         
+        print(f"Fazendo requisição para a API-Football com parâmetros: {params}")
         response = requests.get(url_api_football, headers=headers, params=params)
         
+        print(f"Status da resposta: {response.status_code}")
+        
         if response.status_code == 200:
-            data = response.json()
+            data_response = response.json()
+            
+            # Verificar se atingiu o limite da API
+            if data_response.get('errors') and 'rate limit' in str(data_response.get('errors')).lower():
+                print("ERRO: Limite de requisições da API-Football atingido!")
+                return 'LIMITE_API_ATINGIDO'
             
             jogos = []
-            if data.get('response'):
-                for fixture in data.get('response', []):
+            if data_response.get('response'):
+                print(f"Recebidos {len(data_response.get('response'))} jogos da API")
+                for fixture in data_response.get('response', []):
                     # Extrair dados do jogo
                     
                     # Obter informações do país
@@ -191,97 +202,46 @@ def get_jogos_do_dia(data=None):
                 # Ordenar jogos por horário
                 jogos.sort(key=lambda x: x['data_hora'])
                 return jogos
+            else:
+                print("Nenhum jogo retornado pela API, usando dados de exemplo")
     except Exception as e:
         # Registrar erro, mas continuar com dados de exemplo
-        pass
+        print(f"Erro ao buscar jogos da API: {e}")
     
-    # Se nenhuma API funcionou, usar dados de exemplo
-    jogos = [
-        {
-            'id': '1',
-            'time_casa': 'Manchester City',
-            'time_casa_id': 'manchester_city',
-            'time_visitante': 'Real Madrid',
-            'time_visitante_id': 'real_madrid',
-            'data_hora': int(datetime.now().timestamp()),
-            'campeonato': 'UEFA Champions League',
-            'tournament_id': 'champions_league',
-            'pais': 'Europe',
-            'pais_slug': 'eu',
-            'alpha3': 'EUR',
-            'tem_anotacao': False
-        },
-        {
-            'id': '2',
-            'time_casa': 'Liverpool',
-            'time_casa_id': 'liverpool',
-            'time_visitante': 'Arsenal',
-            'time_visitante_id': 'arsenal',
-            'data_hora': int(datetime.now().timestamp()) + 3600,
-            'campeonato': 'Premier League',
-            'tournament_id': 'premier_league',
-            'pais': 'England',
-            'pais_slug': 'gb-eng',
-            'alpha3': 'ENG',
-            'tem_anotacao': False
-        },
-        {
-            'id': '3',
-            'time_casa': 'Flamengo',
-            'time_casa_id': 'flamengo',
-            'time_visitante': 'São Paulo',
-            'time_visitante_id': 'sao_paulo',
-            'data_hora': int(datetime.now().timestamp()) + 7200,
-            'campeonato': 'Copa do Brasil',
-            'tournament_id': 'copa_brasil',
-            'pais': 'Brazil',
-            'pais_slug': 'br',
-            'alpha3': 'BRA',
-            'tem_anotacao': False
-        },
-        {
-            'id': '4',
-            'time_casa': 'Boca Juniors',
-            'time_casa_id': 'boca_juniors',
-            'time_visitante': 'River Plate',
-            'time_visitante_id': 'river_plate',
-            'data_hora': int(datetime.now().timestamp()) + 10800,
-            'campeonato': 'Copa Sudamericana',
-            'tournament_id': 'copa_sudamericana',
-            'pais': 'Argentina',
-            'pais_slug': 'ar',
-            'alpha3': 'ARG',
-            'tem_anotacao': False
-        },
-        {
-            'id': '5',
-            'time_casa': 'Botafogo-PB',
-            'time_casa_id': 'botafogo_pb',
-            'time_visitante': 'Sport',
-            'time_visitante_id': 'sport',
-            'data_hora': int(datetime.now().timestamp()) + 14400,
-            'campeonato': 'Copa do Nordeste',
-            'tournament_id': 'copa_nordeste',
-            'pais': 'Brazil',
-            'pais_slug': 'br',
-            'alpha3': 'BRA',
-            'tem_anotacao': False
-        }
-    ]
-        
-    # Ordenar jogos por horário
-    jogos.sort(key=lambda x: x['data_hora'])
+    # Verificar se o erro foi devido ao limite da API
+    if 'rate limit' in str(e).lower():
+        print("ERRO: Limite de requisições da API-Football atingido!")
+        return 'LIMITE_API_ATINGIDO'
+    
+    # Se for outro tipo de erro, usar dados de exemplo
+    print("Usando dados de exemplo devido a erro na API")
+    jogos = []
     return jogos
 
 @app.route('/api/jogos')
 def get_jogos():
     data = request.args.get('date')
+    print(f"Requisição para /api/jogos com parâmetro date: {data}")
+    
     if data:
         data_formatada = data
     else:
-        data_formatada = datetime.now().strftime('%Y-%m-%d')
+        tz = pytz.timezone('America/Sao_Paulo')
+        data_formatada = datetime.now(tz).strftime('%Y-%m-%d')
+        print(f"Nenhuma data fornecida, usando data atual: {data_formatada}")
     
-    jogos = get_jogos_do_dia(data_formatada)
+    resultado = get_jogos_do_dia(data_formatada)
+    
+    # Verificar se atingiu o limite da API
+    if resultado == 'LIMITE_API_ATINGIDO':
+        print("Retornando mensagem de limite de API atingido")
+        return jsonify({
+            'limite_api_atingido': True,
+            'mensagem': 'Você atingiu o limite diário de requisições da API-Football. Por favor, tente novamente amanhã.'
+        })
+    
+    jogos = resultado
+    print(f"Retornando {len(jogos)} jogos para a data {data_formatada}")
     
     if not db:
         # Se o Firebase não estiver configurado, retornar jogos sem verificar anotações
@@ -305,22 +265,72 @@ def get_anotacoes():
     if not db:
         return jsonify([])
     
+    print("Buscando anotações no Firestore...")
+    
     # Consultar anotações no Firestore
     anotacoes_ref = db.collection('anotacoes')
     anotacoes_docs = anotacoes_ref.stream()
     
-    resultado = []
+    # Agrupar anotações por jogo_id
+    anotacoes_por_jogo = {}
+    
     for doc in anotacoes_docs:
         anotacao = doc.to_dict()
         anotacao['id'] = doc.id
-        resultado.append({
-            'id': doc.id,
-            'jogo_id': anotacao.get('jogo_id'),
-            'time_casa': anotacao.get('time_casa'),
-            'time_visitante': anotacao.get('time_visitante'),
-            'texto': anotacao.get('texto')
-        })
+        
+        jogo_id = anotacao.get('jogo_id')
+        data_hora = anotacao.get('data_hora')
+        
+        if jogo_id not in anotacoes_por_jogo:
+            anotacoes_por_jogo[jogo_id] = []
+        
+        anotacoes_por_jogo[jogo_id].append(anotacao)
     
+    # Para cada jogo_id, pegar apenas a anotação mais recente
+    resultado = []
+    for jogo_id, anotacoes in anotacoes_por_jogo.items():
+        print(f"Processando {len(anotacoes)} anotações para jogo_id {jogo_id}")
+        
+        # Imprimir todas as anotações para este jogo_id para depuração
+        for i, anotacao in enumerate(anotacoes):
+            data_hora = anotacao.get('data_hora')
+            data_hora_str = data_hora.isoformat() if data_hora else "Sem data"
+            print(f"  Anotação {i+1}: ID={anotacao['id']}, data_hora={data_hora_str}, texto={anotacao.get('texto')[:30]}...")
+        
+        try:
+            # Ordenar anotações por data_hora (mais recente primeiro)
+            # Usar created_at como fallback se data_hora não estiver disponível
+            def get_data_hora(anotacao):
+                data_hora = anotacao.get('data_hora')
+                if data_hora:
+                    return data_hora
+                created_at = anotacao.get('created_at')
+                if created_at:
+                    return created_at
+                return datetime.min
+            
+            anotacoes_ordenadas = sorted(anotacoes, key=get_data_hora, reverse=True)
+            
+            # Pegar a primeira anotação (a mais recente)
+            anotacao_mais_recente = anotacoes_ordenadas[0]
+            
+            data_hora = anotacao_mais_recente.get('data_hora')
+            data_hora_str = data_hora.isoformat() if data_hora else None
+            
+            print(f"  Anotação mais recente: ID={anotacao_mais_recente['id']}, data_hora={data_hora_str}")
+            
+            resultado.append({
+                'id': anotacao_mais_recente['id'],
+                'jogo_id': anotacao_mais_recente.get('jogo_id'),
+                'time_casa': anotacao_mais_recente.get('time_casa'),
+                'time_visitante': anotacao_mais_recente.get('time_visitante'),
+                'texto': anotacao_mais_recente.get('texto'),
+                'data_hora': data_hora_str
+            })
+        except Exception as e:
+            print(f"Erro ao processar anotações para jogo_id {jogo_id}: {e}")
+    
+    print(f"Encontradas {len(resultado)} anotações únicas (mais recentes por jogo)")
     return jsonify(resultado)
 
 @app.route('/api/anotacoes', methods=['POST'])
@@ -329,22 +339,52 @@ def criar_anotacao():
         return jsonify({'status': 'error', 'message': 'Firebase não configurado'}), 500
     
     data = request.json
+    print(f"Dados recebidos para salvar anotação: {data}")
     
     # Converter a string ISO para objeto datetime
     data_hora = datetime.fromisoformat(data['data_hora'])
     
-    # Criar documento no Firestore
-    anotacao_ref = db.collection('anotacoes').document()  # ID automático
-    anotacao_ref.set({
-        'jogo_id': data['jogo_id'],
-        'time_casa': data['time_casa'],
-        'time_visitante': data['time_visitante'],
-        'data_hora': data_hora,
-        'campeonato': data['campeonato'],
-        'texto': data['texto'],
-        'created_at': firestore.SERVER_TIMESTAMP
-    })
+    # Verificar se é uma atualização (tem ID) ou uma nova anotação
+    if 'id' in data and data['id']:
+        print(f"Atualizando anotação existente com ID: {data['id']}")
+        # Atualizar documento existente
+        anotacao_ref = db.collection('anotacoes').document(data['id'])
+        
+        # Primeiro, verificar se o documento existe
+        doc = anotacao_ref.get()
+        if not doc.exists:
+            print(f"ERRO: Documento com ID {data['id']} não encontrado!")
+            return jsonify({'status': 'error', 'message': 'Documento não encontrado'}), 404
+        
+        # Obter os dados atuais do documento
+        anotacao_atual = doc.to_dict()
+        print(f"Dados atuais do documento: {anotacao_atual}")
+        
+        # Atualizar o documento com os novos dados
+        anotacao_ref.update({
+            'texto': data['texto'],
+            'data_hora': data_hora,  # Atualizar data_hora para a data atual
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        # Verificar se a atualização foi bem-sucedida
+        doc_atualizado = anotacao_ref.get()
+        print(f"Documento após atualização: {doc_atualizado.to_dict()}")
+    else:
+        print(f"Criando nova anotação para jogo_id: {data['jogo_id']}")
+        # Criar novo documento no Firestore
+        anotacao_ref = db.collection('anotacoes').document()  # ID automático
+        anotacao_ref.set({
+            'jogo_id': str(data['jogo_id']),  # Garantir que jogo_id seja string
+            'time_casa': data['time_casa'],
+            'time_visitante': data['time_visitante'],
+            'data_hora': data_hora,
+            'campeonato': data['campeonato'],
+            'texto': data['texto'],
+            'created_at': firestore.SERVER_TIMESTAMP
+        })
     
+    print(f"Anotação salva com sucesso, ID: {anotacao_ref.id}")
     return jsonify({'status': 'success', 'id': anotacao_ref.id})
 
 if __name__ == '__main__':
